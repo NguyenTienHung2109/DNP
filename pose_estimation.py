@@ -1,30 +1,27 @@
-import os
-from functools import partial
-
-import gradio as gr
-from openxlab.model import download
-from mmpose.apis import MMPoseInferencer
+import mediapipe as mp
+import cv2
+import numpy as np
+from PIL import Image
 
 class PoseEstimation:
-    def __init__(self, model_type='rtmpose | body'):
-        self.model_type = model_type
-        self.model = None
+    def __init__(self) -> None:
+        self.mp_pose = mp.solutions.pose.Pose(static_image_mode=True, min_detection_confidence=0.5, model_complexity=2)
 
-        self.setup_models()
+    def predict(self, frame):
+        # Convert to RGB as MediaPipe expects RGB input
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    def setup_models(self):
-        if self.model_type == 'rtmpose | body':
-            pose2d_model = 'rtmpose-l'
-        else:
-            raise ValueError(f"Unsupported model type: {self.model_type}")
+        # Perform pose estimation
+        results = self.mp_pose.process(frame_rgb)
+        keypoints = []
+        # Draw pose landmarks on the frame
+        if results.pose_landmarks is not None:
+            mp.solutions.drawing_utils.draw_landmarks(frame, results.pose_landmarks, mp.solutions.pose.POSE_CONNECTIONS)
+            for landmark in results.pose_landmarks.landmark:
+                x = int(landmark.x * frame.shape[1])
+                y = int(landmark.y * frame.shape[0])
+                keypoints.append((x, y))
 
-        self.model = MMPoseInferencer(pose2d=pose2d_model)
-
-    def predict(self, input_image, draw_heatmap=False):
-        result = next(self.model(input_image, return_vis=True, draw_heatmap=draw_heatmap))
-        img = result['visualization'][0][..., ::-1]
-        return img
-
-# if __name__ == "__main__":
-#     pose_estimation = PoseEstimation(model_type='rtmpose | body')
-#     pose_estimation.run_demo()
+        # Convert the frame back to BGR
+        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        return frame_bgr, np.array(keypoints)
