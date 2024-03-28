@@ -8,7 +8,7 @@ import torch
 from pathlib import Path
 import cv2
 import json
-from boxmot import DeepOCSORT
+from boxmot import OCSORT
 
 class KafkaHumanDetection:
     def __init__(self, bootstrap_servers='localhost:9092', detection_topic='detection', result_topic='bbox', group_id='detection'):
@@ -20,10 +20,10 @@ class KafkaHumanDetection:
         self.received_frames = []  # List to store received frames
         self.model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
-        self.tracker = DeepOCSORT(
-            model_weights=Path('osnet_x0_25_msmt17.pt'),
-            device='cuda:0' if torch.cuda.is_available() else 'cpu',
-            fp16=False
+        self.tracker = OCSORT(
+            # model_weights=Path('osnet_x0_25_msmt17.pt'),
+            # device='cuda:0' if torch.cuda.is_available() else 'cpu',
+            # fp16=False
         )
 
         #CONSUMER
